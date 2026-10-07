@@ -1,39 +1,41 @@
 name: CI
 
-on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+on: [push, pull_request]
 
 jobs:
   build:
     runs-on: ubuntu-latest
     services:
       postgres:
-        image: postgres:13
-        ports:
-          - 5432:5432
+        image: postgres:15
         env:
+          POSTGRES_DB: testdb
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: testdb
         options: >-
           --health-cmd="pg_isready -U postgres"
           --health-interval=10s
           --health-timeout=5s
           --health-retries=5
+        ports:
+          - 5432:5432
 
     env:
-      DATABASE_URL: postgres://postgres:postgres@localhost:5432/testdb
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/testdb
 
     steps:
       - uses: actions/checkout@v3
+      
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.10'
+
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        run: poetry install
+
       - name: Run tests
-        run: pytest -v
+        run: poetry run pytest -v
