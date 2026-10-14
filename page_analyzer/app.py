@@ -1,12 +1,11 @@
-Flask import Flask
+from flask import Flask
 
 app = Flask(__name__)
 
 @app.route('/')
 def index():
-    return '¡Hola Flask!'
+  return '¡Hola Flask!'
 
 @app.route('/urls')
 def urls():
-    # Aquí puedes devolver una página, un texto o incluso redirigir
-    return "Página de URLs", 200
+  return 'Página de URLs', 200
