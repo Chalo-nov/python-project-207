@@ -21,3 +21,8 @@ render-start:
 
 test:
 	poetry run pytest tests/
+
+
+start-server:
+	poetry run gunicorn -w 5 -b 0.0.0.0:$(PORT) page_analyzer:app
+	
