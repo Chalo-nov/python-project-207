@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-set -e
+# Descarga uv e instala dependencias
+curl -LsSf https://astral.sh/uv/install.sh | sh
+source $HOME/.local/bin/env
 make install
-pip install --upgrade pip
-pip install poetry
-poetry install
+chmod +x ./build.sh
