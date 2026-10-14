@@ -6,10 +6,6 @@ app = Flask(__name__)
 def index():
     return '¡Hola Flask!'
 
-@app.route('/')
-def index():
-    return "¡Bienvenido al Analizador de Páginas!"
-
 @app.route('/urls')
 def urls():
     # Aquí puedes devolver una página, un texto o incluso redirigir
