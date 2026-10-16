@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Sitios web</h1>
+<div class="table-responsive">
+    <table class="table table-bordered table-hover text-center">
+        <thead class="table-dark">
+            <tr>
+                <th>ID</th>
+                <th>Nombre</th>
+                <th>Última verificación</th>
+                <th>Código respuesta</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for url in urls %}
+            <tr>
+                <td>{{ url.id }}</td>
+                <td><a href="{{ url_for('urls_show', id=url.id) }}">{{ url.name }}</a></td>
+                <td>{{ url.created_at or '' }}</td>
+                <td>{{ url.status_code or '' }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

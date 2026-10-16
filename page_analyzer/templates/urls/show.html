@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Sitio: {{ url.name }}</h1>
+<div class="table-responsive">
+    <table class="table table-bordered">
+        <tbody>
+            <tr>
+                <th class="w-25">ID</th>
+                <td>{{ url.id }}</td>
+            </tr>
+            <tr>
+                <th>Nombre</th>
+                <td>{{ url.name }}</td>
+            </tr>
+            <tr>
+                <th>Fecha de creación</th>
+                <td>{{ url.created_at }}</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<h2 class="mt-5">Verificaciones</h2>
+<form action="{{ url_for('urls_check', id=url.id) }}" method="post" class="mb-3">
+    <button type="submit" class="btn btn-primary">Lanzar verificación</button>
+</form>
+
+<div class="table-responsive">
+    <table class="table table-bordered table-hover text-center">
+        <thead class="table-dark">
+            <tr>
+                <th>ID</th>
+                <th>Código respuesta</th>
+                <th>H1</th>
+                <th>Título</th>
+                <th>Descripción</th>
+                <th>Fecha de creación</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for check in checks %}
+            <tr>
+                <td>{{ check.id }}</td>
+                <td>{{ check.status_code }}</td>
+                <td>{{ check.h1 or '' }}</td>
+                <td>{{ check.title or '' }}</td>
+                <td>{{ check.description or '' }}</td>
+                <td>{{ check.created_at }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

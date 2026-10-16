@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="p-5 mb-4 bg-light rounded-3 shadow-sm">
+            <h1 class="display-5 fw-bold">Analizador de Páginas</h1>
+            <p class="col-md-8 fs-4">Analiza páginas web en busca de SEO y metadatos.</p>
+            
+            <form action="{{ url_for('urls_post') }}" method="post" class="row g-3">
+                <div class="col-auto flex-grow-1">
+                    <label for="url" class="visually-hidden">URL</label>
+                    <input type="text" class="form-control form-control-lg" id="url" name="url[name]" placeholder="https://www.example.com" value="{{ url.name if url else '' }}">
+                </div>
+                <div class="col-auto">
+                    <button type="submit" class="btn btn-primary btn-lg mb-3">Extraer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
