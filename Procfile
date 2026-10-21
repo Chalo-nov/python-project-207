@@ -1,0 +1,1 @@
+web: gunicorn hexlet_code:app
