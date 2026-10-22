@@ -1,7 +1,8 @@
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template
 
 app = Flask(__name__)
 
+
 @app.route('/')
 def index():
-    return render_template('index.html')
+    return '¡Bienvenido al analizador de páginas!'
