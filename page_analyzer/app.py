@@ -10,8 +10,7 @@ def check_url(id):
         return "URL no encontrada", 404
 
     target_url = url_row['name']
-
-    # Simulamos un navegador real mediante los headers (User-Agent)
+    
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
     }
