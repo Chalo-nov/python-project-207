@@ -72,7 +72,8 @@ def list_urls():
             SELECT DISTINCT ON (urls.id) 
                 urls.id, 
                 urls.name, 
-                url_checks.created_at 
+                url_checks.created_at,
+                url_checks.status_code
             FROM urls 
             LEFT JOIN url_checks ON urls.id = url_checks.url_id 
             ORDER BY urls.id DESC, url_checks.created_at DESC;
@@ -116,13 +117,15 @@ def check_url(id):
 
     target_url = url_row['name']
 
-    # Cabeceras para simular un navegador real y evitar bloqueos (como en Google)
+    # Cabeceras para simular un navegador real y evitar bloqueos
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
     }
 
     try:
         response = requests.get(target_url, headers=headers, timeout=5)
+        response.raise_for_status()
+        
         status_code = response.status_code
         
         soup = BeautifulSoup(response.text, 'html.parser')
@@ -148,7 +151,7 @@ def check_url(id):
 
         flash('Página revisada con éxito', 'success')
     except requests.exceptions.RequestException:
-        flash('Falla en la comunicación o sitio no disponible', 'danger')
+        flash('ocurrió un error al hacer la verificación', 'danger')
 
     conn.close()
     return redirect(url_for('show_url', id=id))
