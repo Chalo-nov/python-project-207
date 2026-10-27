@@ -1,22 +1,3 @@
-[project]
-name = "hexlet-code"
-version = "0.1.0"
-description = ""
-authors = [
-    {name = "chalo-nov",email = "jcn1708@gmail.com"}
-]
-readme = "README.md"
-requires-python = ">=3.13"
-dependencies = [
-    "beautifulsoup4>=4.15.0",
-    "flask (>=3.1.3,<4.0.0)",
-    "gunicorn (>=26.2.0,<27.0.0)",
-    "psycopg2-binary>=2.9.13",
-    "python-dotenv>=1.2.4,<2.0.0",
-    "requests>=2.34.2",
-    "validators>=0.36.0",
-]
-
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
@@ -24,8 +5,18 @@ build-backend = "poetry.core.masonry.api"
 [tool.poetry]
 name = "hexlet-code"
 version = "0.1.0"
-description = ""
-authors = ["Your Name <you@example.com>"]
+description = "Analizador de páginas web con Flask"
+authors = ["Chalo Nov <jcn1708@gmail.com>"]
 packages = [
     { include = "page_analyzer" }
 ]
+
+[tool.poetry.dependencies]
+python = ">=3.13"
+beautifulsoup4 = ">=4.15.0"
+flask = ">=3.1.3,<4.0.0"
+gunicorn = ">=26.2.0,<27.0.0"
+psycopg2-binary = ">=2.9.13"
+python-dotenv = ">=1.2.4,<2.0.0"
+requests = ">=2.34.2"
+validators = ">=0.36.0"
