@@ -31,6 +31,10 @@ def get_db_connection():
 def index():
     return render_template('index.html')
 
+from flask import Flask, render_template
+
+app = Flask(__name__)
+
 
 @app.post('/urls')
 def add_url():
