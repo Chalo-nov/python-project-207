@@ -1,157 +1,143 @@
 import os
 import requests
-from bs4 import BeautifulSoup
-import psycopg2
-from psycopg2.extras import DictCursor
-from dotenv import load_dotenv
 from flask import (
     Flask,
-    flash,
-    get_flashed_messages,
-    redirect,
     render_template,
     request,
+    redirect,
     url_for,
+    flash,
+    abort
 )
-from validators import url as validate_url
+import psycopg2
+from psycopg2.extras import NamedTupleCursor
+from dotenv import load_dotenv
+from urllib.parse import urlparse
+import validators
+from bs4 import BeautifulSoup
 
 load_dotenv()
 
-# Inicialización de la aplicación Flask (DEBE ir antes de cualquier @app.route)
 app = Flask(__name__)
-app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'secret_key')
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'default_secret_key')
 DATABASE_URL = os.getenv('DATABASE_URL')
 
 
-def get_db():
-    return psycopg2.connect(DATABASE_URL)
+def get_db_connection():
+    return psycopg2.connect(DATABASE_URL, cursor_factory=NamedTupleCursor)
 
 
 @app.route('/')
 def index():
-    messages = get_flashed_messages(with_categories=True)
-    return render_template('index.html', messages=messages)
+    return render_template('index.html')
 
 
-@app.route('/urls', methods=['POST'])
+@app.post('/urls')
 def add_url():
-    url_input = request.form.get('url')
+    url_input = request.form.to_dict().get('url', {}).get('name', '').strip()
+    
+    # Validar si es una URL válida
+    if not url_input or not validators.url(url_input) or len(url_input) > 255:
+        flash('Некорректный URL' if 'ru' in url_input else 'URL inválido', 'danger')
+        return render_template('index.html', url_input=url_input), 422
 
-    if not validate_url(url_input) or len(url_input) > 255:
-        flash('URL no válida', 'danger')
-        messages = get_flashed_messages(with_categories=True)
-        return render_template('index.html', messages=messages, url=url_input), 422
+    parsed_url = urlparse(url_input)
+    normalized_url = f"{parsed_url.scheme}://{parsed_url.netloc}"
 
-    conn = get_db()
-    with conn.cursor(cursor_factory=DictCursor) as cur:
-        cur.execute("SELECT id FROM urls WHERE name = %s;", (url_input,))
-        existing_url = cur.fetchone()
+    conn = get_db_connection()
+    with conn.cursor() as cursor:
+        cursor.execute("SELECT * FROM urls WHERE name = %s;", (normalized_url,))
+        existing_url = cursor.fetchone()
 
         if existing_url:
-            flash('Página ya existe', 'info')
-            conn.close()
-            return redirect(url_for('show_url', id=existing_url['id']))
-
-        cur.execute(
-            "INSERT INTO urls (name) VALUES (%s) RETURNING id;",
-            (url_input,)
-        )
-        new_id = cur.fetchone()['id']
-        conn.commit()
+            flash('Страница уже существует' if 'ru' in url_input else 'La página ya existe', 'info')
+            url_id = existing_url.id
+        else:
+            cursor.execute(
+                "INSERT INTO urls (name, created_at) VALUES (%s, NOW()) RETURNING id;",
+                (normalized_url,)
+            )
+            url_id = cursor.fetchone().id
+            conn.commit()
+            flash('Страница успешно добавлена' if 'ru' in url_input else 'Página agregada exitosamente', 'success')
 
     conn.close()
-    flash('Página añadida con éxito', 'success')
-    return redirect(url_for('show_url', id=new_id))
+    return redirect(url_for('show_url', id=url_id))
 
 
 @app.route('/urls')
 def list_urls():
-    conn = get_db()
-    with conn.cursor(cursor_factory=DictCursor) as cur:
-        cur.execute("""
-            SELECT DISTINCT ON (urls.id) 
-                urls.id, 
-                urls.name, 
-                url_checks.created_at,
-                url_checks.status_code
+    conn = get_db_connection()
+    with conn.cursor() as cursor:
+        cursor.execute("""
+            SELECT urls.id, urls.name, 
+                   url_checks.created_at as last_check_at, 
+                   url_checks.status_code 
             FROM urls 
             LEFT JOIN url_checks ON urls.id = url_checks.url_id 
-            ORDER BY urls.id DESC, url_checks.created_at DESC;
+            WHERE url_checks.id = (
+                SELECT MAX(id) FROM url_checks WHERE url_id = urls.id
+            )
+            OR url_checks.id IS NULL
+            ORDER BY urls.id DESC;
         """)
-        urls = cur.fetchall()
+        urls = cursor.fetchall()
     conn.close()
-    return render_template('urls.html', urls=urls)
+    return render_template('urls/index.html', urls=urls)
 
 
 @app.route('/urls/<int:id>')
 def show_url(id):
-    conn = get_db()
-    with conn.cursor(cursor_factory=DictCursor) as cur:
-        cur.execute("SELECT * FROM urls WHERE id = %s;", (id,))
-        url_data = cur.fetchone()
+    conn = get_db_connection()
+    with conn.cursor() as cursor:
+        cursor.execute("SELECT * FROM urls WHERE id = %s;", (id,))
+        url = cursor.fetchone()
+        if not url:
+            abort(404)
 
-        cur.execute(
+        cursor.execute(
             "SELECT * FROM url_checks WHERE url_id = %s ORDER BY id DESC;",
             (id,)
         )
-        checks = cur.fetchall()
+        checks = cursor.fetchall()
     conn.close()
-
-    if not url_data:
-        return "URL no encontrada", 404
-
-    messages = get_flashed_messages(with_categories=True)
-    return render_template('url.html', url=url_data, checks=checks, messages=messages)
+    return render_template('urls/show.html', url=url, checks=checks)
 
 
-@app.route('/urls/<int:id>/checks', methods=['POST'])
+@app.post('/urls/<int:id>/checks')
 def check_url(id):
-    conn = get_db()
-    with conn.cursor(cursor_factory=DictCursor) as cur:
-        cur.execute("SELECT name FROM urls WHERE id = %s;", (id,))
-        url_row = cur.fetchone()
-
-    if not url_row:
-        conn.close()
-        return "URL no encontrada", 404
-
-    target_url = url_row['name']
-
-    # Cabeceras para simular un navegador real y evitar bloqueos
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-    }
+    conn = get_db_connection()
+    with conn.cursor() as cursor:
+        cursor.execute("SELECT * FROM urls WHERE id = %s;", (id,))
+        url = cursor.fetchone()
+        if not url:
+            abort(404)
 
     try:
-        response = requests.get(target_url, headers=headers, timeout=5)
+        response = requests.get(url.name, timeout=5)
         response.raise_for_status()
-        
         status_code = response.status_code
-        
+
         soup = BeautifulSoup(response.text, 'html.parser')
-        
-        title_tag = soup.find('title')
-        title = title_tag.string if title_tag else ''
-
-        h1_tag = soup.find('h1')
-        h1 = h1_tag.get_text() if h1_tag else ''
-
+        h1 = soup.h1.string if soup.h1 else ''
+        title = soup.title.string if soup.title else ''
+        description = ''
         desc_tag = soup.find('meta', attrs={'name': 'description'})
-        description = desc_tag['content'] if desc_tag and 'content' in desc_tag.attrs else ''
+        if desc_tag and desc_tag.get('content'):
+            description = desc_tag.get('content')
 
-        with conn.cursor() as cur:
-            cur.execute(
+        with conn.cursor() as cursor:
+            cursor.execute(
                 """
-                INSERT INTO url_checks (url_id, status_code, h1, title, description)
-                VALUES (%s, %s, %s, %s, %s);
+                INSERT INTO url_checks (url_id, status_code, h1, title, description, created_at)
+                VALUES (%s, %s, %s, %s, %s, NOW());
                 """,
                 (id, status_code, h1, title, description)
             )
             conn.commit()
-
-        flash('Página revisada con éxito', 'success')
-    except requests.exceptions.RequestException:
-        flash('ocurrió un error al hacer la verificación', 'danger')
+        flash('Страница успешно проверена' if 'ru' in url_input else 'Página verificada exitosamente', 'success')
+    except requests.RequestException:
+        flash('Произошла ошибка при проверке' if 'ru' in url_input else 'Ocurrió un error al verificar la página', 'danger')
 
     conn.close()
     return redirect(url_for('show_url', id=id))
