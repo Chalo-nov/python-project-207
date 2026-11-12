@@ -40,8 +40,11 @@ def add_url():
     if not validate_url(url_input) or len(url_input) > 255:
         flash('URL no válida', 'danger')
         messages = get_flashed_messages(with_categories=True)
-        return render_template('index.html', messages=messages, url=url_input), 422
-
+        return render_template(
+            'index.html',
+            messages=messages,
+            url=url_input
+        ), 422
     conn = get_db()
     with conn.cursor(cursor_factory=DictCursor) as cur:
         cur.execute("SELECT id FROM urls WHERE name = %s;", (url_input,))
@@ -69,13 +72,13 @@ def list_urls():
     conn = get_db()
     with conn.cursor(cursor_factory=DictCursor) as cur:
         cur.execute("""
-            SELECT DISTINCT ON (urls.id) 
-                urls.id, 
-                urls.name, 
+            SELECT DISTINCT ON (urls.id)
+                urls.id,
+                urls.name,
                 url_checks.created_at,
                 url_checks.status_code
-            FROM urls 
-            LEFT JOIN url_checks ON urls.id = url_checks.url_id 
+            FROM urls
+            LEFT JOIN url_checks ON urls.id = url_checks.url_id
             ORDER BY urls.id DESC, url_checks.created_at DESC;
         """)
         urls = cur.fetchall()
@@ -101,7 +104,12 @@ def show_url(id):
         return "URL no encontrada", 404
 
     messages = get_flashed_messages(with_categories=True)
-    return render_template('url.html', url=url_data, checks=checks, messages=messages)
+    return render_template(
+        'url.html',
+        url=url_data,
+        checks=checks,
+        messages=messages
+    )
 
 
 @app.route('/urls/<int:id>/checks', methods=['POST'])
@@ -116,38 +124,37 @@ def check_url(id):
         return "URL no encontrada", 404
 
     target_url = url_row['name']
-
-    # Cabeceras para simular un navegador real y evitar bloqueos
     headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
+        'AppleWebKit/537.36 (KHTML, like Gecko)'
+        'Chrome/120.0.0.0 Safari/537.36'
     }
-
     try:
         response = requests.get(target_url, headers=headers, timeout=5)
         response.raise_for_status()
-        
         status_code = response.status_code
-        
         soup = BeautifulSoup(response.text, 'html.parser')
-        
         title_tag = soup.find('title')
         title = title_tag.string if title_tag else ''
-
         h1_tag = soup.find('h1')
         h1 = h1_tag.get_text() if h1_tag else ''
-
         desc_tag = soup.find('meta', attrs={'name': 'description'})
-        description = desc_tag['content'] if desc_tag and 'content' in desc_tag.attrs else ''
+        description = (
+            desc_tag['content']
+            if desc_tag and 'content' in desc_tag.attrs
+            else ''
+            )
 
         with conn.cursor() as cur:
             cur.execute(
                 """
-                INSERT INTO url_checks (url_id, status_code, h1, title, description)
+                INSERT INTO url_checks
+                (url_id, status_code, h1, title, description)
                 VALUES (%s, %s, %s, %s, %s);
                 """,
                 (id, status_code, h1, title, description)
             )
-            conn.commit()
+        conn.commit()
 
         flash('Página revisada con éxito', 'success')
     except requests.exceptions.RequestException:

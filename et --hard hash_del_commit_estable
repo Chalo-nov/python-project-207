@@ -1,0 +1,10 @@
+[33m097b550[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m Implementa rutas completas requeridas para Page Analyzer
+[33m9cc8c59[m Implementa rutas completas requeridas para Page Analyzer
+[33m3f20285[m Agrega test funcional de Flask para la evaluacion
+[33m05f3d49[m Add README.md
+[33m0bf5e13[m Update hexlet-check.yml
+[33mb14d31b[m[33m ([m[1;32mmaster[m[33m)[m Regresa al estado limpio original
+[33m3553223[m Elimina uv.lock para dejar solo poetry
+[33m27c6329[m Mejora formato de README.md
+[33m2be9f9c[m Remueve el archivo .env del repositorio e ignora con .gitignore
+[33mb9ced49[m Agrega test dummy para que pytest no falle
