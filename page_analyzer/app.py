@@ -12,6 +12,7 @@ from flask import (
     render_template,
     request,
     url_for,
+    abort
 )
 from validators import url as validate_url
 
@@ -63,7 +64,7 @@ def add_url():
         conn.commit()
 
     conn.close()
-    flash('Página añadida con éxito', 'success')
+    flash('Página agragada con éxito', 'success')
     return redirect(url_for('show_url', id=new_id))
 
 
@@ -101,7 +102,7 @@ def show_url(id):
     conn.close()
 
     if not url_data:
-        return "URL no encontrada", 404
+        return "URL inválida", 404
 
     messages = get_flashed_messages(with_categories=True)
     return render_template(
@@ -121,7 +122,7 @@ def check_url(id):
 
     if not url_row:
         conn.close()
-        return "URL no encontrada", 404
+        abort(404)
 
     target_url = url_row['name']
     headers = {
