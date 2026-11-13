@@ -38,7 +38,7 @@ def add_url():
     url_input = request.form.get('url')
 
     if not validate_url(url_input) or len(url_input) > 255:
-        flash('URL no válida', 'danger')
+        flash('URL inválida', 'danger')
         messages = get_flashed_messages(with_categories=True)
         return render_template(
             'index.html',
@@ -51,7 +51,7 @@ def add_url():
         existing_url = cur.fetchone()
 
         if existing_url:
-            flash('Página ya existe', 'info')
+            flash('La página ya existe', 'info')
             conn.close()
             return redirect(url_for('show_url', id=existing_url['id']))
 
@@ -163,7 +163,7 @@ def check_url(id):
 
         flash('Página revisada con éxito', 'success')
     except requests.exceptions.RequestException:
-        flash('Ocurrió un error al hacer la verificación', 'danger')
+        flash('Error al verificar', 'danger')
 
     conn.close()
     return redirect(url_for('show_url', id=id))
