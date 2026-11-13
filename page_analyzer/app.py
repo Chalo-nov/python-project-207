@@ -133,23 +133,23 @@ def check_url(id):
         response = requests.get(target_url, headers=headers, timeout=5)
         response.raise_for_status()
         status_code = response.status_code
-        
         soup = BeautifulSoup(response.text, 'html.parser')
-        
+
         # 1. Título limpio
         title_tag = soup.find('title')
-        title = title_tag.string.strip() if title_tag and title_tag.string else ''
-        
-        # 2. H1 con .strip() para limpiar saltos de línea o espacios
+        title = title_tag.string.strip() \
+            if title_tag and title_tag.string else ''
+
+        # 2. H1 con .strip() para limpiar espacios
         h1_tag = soup.find('h1')
         h1 = h1_tag.get_text(strip=True) if h1_tag else ''
-        
-        # 3. Descripción buscando de forma flexible (ignorando mayúsculas/minúsculas en el name)
-        desc_tag = soup.find('meta', attrs={'name': lambda x: x and x.lower() == 'description'})
+
+        # 3. Descripción flexible
+        desc_attr = {'name': lambda x: x and x.lower() == 'description'}
+        desc_tag = soup.find('meta', attrs=desc_attr)
         description = ''
         if desc_tag and desc_tag.get('content'):
             description = desc_tag.get('content').strip()
-
         with conn.cursor() as cur:
             cur.execute(
                 """
