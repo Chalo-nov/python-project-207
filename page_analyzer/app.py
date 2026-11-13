@@ -117,10 +117,10 @@ def show_url(id):
 def check_url(id):
     conn = get_db()
     with conn.cursor(cursor_factory=DictCursor) as cur:
-        cur.execute("SELECT name FROM urls WHERE id = %s;", (id,))
-        url_row = cur.fetchone()
+        cur.execute("SELECT * FROM urls WHERE id = %s;", (id,))
+        url = cur.fetchone()
 
-    if not url_row:
+    if not url:
         conn.close()
         abort(404)
 
@@ -131,40 +131,40 @@ def check_url(id):
         'Chrome/120.0.0.0 Safari/537.36'
     }
     try:
-        response = requests.get(target_url, headers=headers, timeout=5)
+        response = requests.get(url['name'])
         response.raise_for_status()
-        status_code = response.status_code
+        
         soup = BeautifulSoup(response.text, 'html.parser')
-
-        # 1. Título limpio
+        
+        status_code = response.status_code
+        
         title_tag = soup.find('title')
-        title = title_tag.string.strip() \
-            if title_tag and title_tag.string else ''
-
-        # 2. H1 con .strip() para limpiar espacios
+        title = title_tag.string.strip() if title_tag and title_tag.string else ''
+        
         h1_tag = soup.find('h1')
         h1 = h1_tag.get_text(strip=True) if h1_tag else ''
-
-        # 3. Descripción flexible
+        
         desc_attr = {'name': lambda x: x and x.lower() == 'description'}
         desc_tag = soup.find('meta', attrs=desc_attr)
         description = ''
         if desc_tag and desc_tag.get('content'):
             description = desc_tag.get('content').strip()
+            
         with conn.cursor() as cur:
             cur.execute(
                 """
-                INSERT INTO url_checks
-                (url_id, status_code, h1, title, description)
-                VALUES (%s, %s, %s, %s, %s);
+                INSERT INTO url_checks 
+                (url_id, status_code, h1, title, description, created_at)
+                VALUES (%s, %s, %s, %s, %s, NOW());
                 """,
                 (id, status_code, h1, title, description)
             )
-        conn.commit()
-
+            conn.commit()
+            
         flash('Página revisada con éxito', 'success')
     except requests.exceptions.RequestException:
         flash('Error al verificar', 'danger')
-
-    conn.close()
+    finally:
+        conn.close()
+        
     return redirect(url_for('show_url', id=id))
