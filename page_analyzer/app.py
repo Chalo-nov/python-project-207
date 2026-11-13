@@ -125,25 +125,30 @@ def check_url(id):
 
     target_url = url_row['name']
     headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
-        'AppleWebKit/537.36 (KHTML, like Gecko)'
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
+        'AppleWebKit/537.36 (KHTML, like Gecko) '
         'Chrome/120.0.0.0 Safari/537.36'
     }
     try:
         response = requests.get(target_url, headers=headers, timeout=5)
         response.raise_for_status()
         status_code = response.status_code
+        
         soup = BeautifulSoup(response.text, 'html.parser')
+        
+        # 1. Título limpio
         title_tag = soup.find('title')
-        title = title_tag.string if title_tag else ''
+        title = title_tag.string.strip() if title_tag and title_tag.string else ''
+        
+        # 2. H1 con .strip() para limpiar saltos de línea o espacios
         h1_tag = soup.find('h1')
-        h1 = h1_tag.get_text() if h1_tag else ''
-        desc_tag = soup.find('meta', attrs={'name': 'description'})
-        description = (
-            desc_tag['content']
-            if desc_tag and 'content' in desc_tag.attrs
-            else ''
-            )
+        h1 = h1_tag.get_text(strip=True) if h1_tag else ''
+        
+        # 3. Descripción buscando de forma flexible (ignorando mayúsculas/minúsculas en el name)
+        desc_tag = soup.find('meta', attrs={'name': lambda x: x and x.lower() == 'description'})
+        description = ''
+        if desc_tag and desc_tag.get('content'):
+            description = desc_tag.get('content').strip()
 
         with conn.cursor() as cur:
             cur.execute(
@@ -158,7 +163,7 @@ def check_url(id):
 
         flash('Página revisada con éxito', 'success')
     except requests.exceptions.RequestException:
-        flash('ocurrió un error al hacer la verificación', 'danger')
+        flash('Ocurrió un error al hacer la verificación', 'danger')
 
     conn.close()
     return redirect(url_for('show_url', id=id))
