@@ -1,0 +1,15 @@
+# Entorno virtual y dependencias
+.venv/
+venv/
+ENV/
+
+# Python y caché
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# Archivos de entorno y temporales
+.env
+instance/
+.DS_Store
